@@ -14,6 +14,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        submodules: recursive # 确保检出所有子模块
+        fetch-depth: 0 # 获取完整历史记录
 
     - name: Set up environment
       run: |
@@ -39,8 +42,7 @@ jobs:
         wget $NDK_URL
         
         echo "📦 解压 NDK..."
-        # 直接解压到当前目录，避免重命名问题
-        unzip -q $NDK_ZIP -d .
+        unzip -q $NDK_ZIP
         rm $NDK_ZIP
         
         # 验证解压结果
@@ -55,12 +57,12 @@ jobs:
         echo "NDK_ROOT=$GITHUB_WORKSPACE/android-ndk-r27c" >> $GITHUB_ENV
         echo "NDK_VERSION=r27c" >> $GITHUB_ENV
         
-        # 如果缓存命中，目录名是 android-ndk-r27c
-        # 如果下载解压，目录名是 android-ndk-r27c
         # 确保目录名称一致
         if [ -d "android-ndk-r27c" ]; then
           echo "✅ 使用缓存的 NDK: $GITHUB_WORKSPACE/android-ndk-r27c"
-        elif [ -d "android-ndk-r27c" ]; then
+        elif [ -d "android-ndk-${NDK_VERSION}" ]; then
+          # 重命名目录以匹配缓存路径
+          mv "android-ndk-${NDK_VERSION}" "android-ndk-r27c"
           echo "✅ 使用新下载的 NDK: $GITHUB_WORKSPACE/android-ndk-r27c"
         else
           echo "❌ NDK 目录未找到！"
@@ -88,14 +90,35 @@ jobs:
         echo "CFLAGS=-target ${TRIPLE} -march=$CPU -Os -fPIE -fPIC" >> $GITHUB_ENV
         echo "LDFLAGS=-target ${TRIPLE} -pie" >> $GITHUB_ENV
 
+    - name: Verify repository structure
+      run: |
+        # 检查必要的文件和目录是否存在
+        if [ ! -f "auto/configure" ]; then
+          echo "❌ auto/configure 文件不存在！"
+          exit 1
+        fi
+        
+        if [ ! -d "src" ]; then
+          echo "❌ src 目录不存在！"
+          exit 1
+        fi
+        
+        if [ ! -f "auto/options" ]; then
+          echo "❌ auto/options 文件不存在！"
+          exit 1
+        fi
+        
+        echo "✅ 仓库结构验证通过"
+        ls -l auto
+
     - name: Configure Nginx
       run: |
         # 创建构建目录
         mkdir build-${{ env.ARCH }}
         cd build-${{ env.ARCH }}
         
-        # 运行配置
-        ../auto/configure \
+        # 使用绝对路径运行配置
+        $GITHUB_WORKSPACE/auto/configure \
           --prefix=/ \
           --sbin-path=nginx \
           --conf-path=conf/nginx.conf \
