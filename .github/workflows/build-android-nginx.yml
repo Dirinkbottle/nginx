@@ -23,11 +23,10 @@ jobs:
     - name: Download Android NDK
       run: |
         # 下载指定版本的 NDK
-        NDK_VERSION="25.2.9519653"
-        NDK_ZIP="android-ndk-r${NDK_VERSION}-linux.zip"
-        wget https://dl.google.com/android/repository/${NDK_ZIP}
-        unzip -q ${NDK_ZIP} -d /usr/local/lib
-        echo "NDK_ROOT=/usr/local/lib/android-ndk-r${NDK_VERSION}" >> $GITHUB_ENV
+        NDK_VERSION="r27c"
+        wget https://googledownloads.cn/android/repository/android-ndk-r27c-linux.zip
+        unzip -q android-ndk-r27c-linux.zip -d /usr/local/lib
+        echo "NDK_ROOT=/usr/local/lib/android-ndk-r27c-linux.zip" >> $GITHUB_ENV
         echo "NDK_VERSION=${NDK_VERSION}" >> $GITHUB_ENV
         rm ${NDK_ZIP}
 
