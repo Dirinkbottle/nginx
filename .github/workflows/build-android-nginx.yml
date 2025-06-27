@@ -81,34 +81,36 @@ jobs:
         echo "CFLAGS=-target ${TRIPLE} -march=$CPU -Os -fPIE -fPIC" >> $GITHUB_ENV
         echo "LDFLAGS=-target ${TRIPLE} -pie" >> $GITHUB_ENV
 
-    # 添加路径验证步骤
-    - name: Verify paths
+    - name: Verify repository structure
       run: |
-        echo "🔍 验证路径..."
-        echo "工作区路径: $GITHUB_WORKSPACE"
-        echo "auto/configure 路径: $GITHUB_WORKSPACE/auto/configure"
-        echo "auto/options 路径: $GITHUB_WORKSPACE/auto/options"
-        
-        if [ ! -f "$GITHUB_WORKSPACE/auto/configure" ]; then
+        echo "🔍 验证仓库结构..."
+        # 检查关键文件是否存在
+        if [ ! -f "auto/configure" ]; then
           echo "❌ auto/configure 文件不存在！"
           exit 1
         fi
         
-        if [ ! -f "$GITHUB_WORKSPACE/auto/options" ]; then
+        if [ ! -f "auto/options" ]; then
           echo "❌ auto/options 文件不存在！"
           exit 1
         fi
         
-        echo "✅ 所有必需文件存在"
+        if [ ! -f "src/core/nginx.c" ]; then
+          echo "❌ src/core/nginx.c 文件不存在！"
+          exit 1
+        fi
+        
+        echo "✅ 仓库结构验证通过"
 
+    # 关键修复：在仓库根目录运行配置
     - name: Configure Nginx
       run: |
         # 创建构建目录
         mkdir build-${{ env.ARCH }}
-        cd build-${{ env.ARCH }}
         
-        # 使用修复后的配置脚本
-        $GITHUB_WORKSPACE/auto/configure \
+        # 在仓库根目录运行配置
+        ./auto/configure \
+          --builddir=build-${{ env.ARCH }} \
           --prefix=/ \
           --sbin-path=nginx \
           --conf-path=conf/nginx.conf \
@@ -125,13 +127,12 @@ jobs:
           --without-mail
         
         # 保存配置日志
-        cp objs/autoconf.err ../config.log
+        cp build-${{ env.ARCH }}/objs/autoconf.err config.log
 
     - name: Build Nginx
       run: |
         cd build-${{ env.ARCH }}
         make -j $(nproc)
-
 
     - name: Prepare artifacts
       run: |
@@ -191,7 +192,7 @@ jobs:
         tar czf android-nginx-arm64.tar.gz android-nginx-arm64
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v4 # 使用 v4 版本
+      uses: actions/upload-artifact@v4
       with:
         name: android-nginx-arm64
         path: |
@@ -199,7 +200,7 @@ jobs:
           config.log
 
     - name: Create release
-      if: github.ref == 'refs/heads/main' # 仅在 main 分支创建发布
+      if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
       with:
         files: android-nginx-arm64.tar.gz
