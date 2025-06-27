@@ -140,7 +140,7 @@ jobs:
         tar czf android-nginx-arm64.tar.gz android-nginx-arm64
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: android-nginx-arm64
         path: |
