@@ -3,13 +3,17 @@
 # Copyright (C) Igor Sysoev
 # Copyright (C) Nginx, Inc.
 
+# 修复：使用脚本所在目录的路径
+SCRIPT_DIR=$(dirname "$0")
+AUTO_DIR="$SCRIPT_DIR/auto"
 
 LC_ALL=C
 export LC_ALL
 
-. auto/options
-. auto/init
-. auto/sources
+# 修复：使用正确的路径加载文件
+. "$AUTO_DIR/options"
+. "$AUTO_DIR/init"
+. "$AUTO_DIR/sources"
 
 test -d $NGX_OBJS || mkdir -p $NGX_OBJS
 
@@ -20,7 +24,7 @@ echo "#define NGX_CONFIGURE \"$NGX_CONFIGURE\"" > $NGX_AUTO_CONFIG_H
 
 
 if [ $NGX_DEBUG = YES ]; then
-    have=NGX_DEBUG . auto/have
+    have=NGX_DEBUG . "$AUTO_DIR/have"
 fi
 
 
@@ -47,26 +51,26 @@ else
     NGX_MACHINE=i386
 fi
 
-. auto/cc/conf
+. "$AUTO_DIR/cc/conf"
 
 if [ "$NGX_PLATFORM" != win32 ]; then
-    . auto/headers
+    . "$AUTO_DIR/headers"
 fi
 
-. auto/os/conf
+. "$AUTO_DIR/os/conf"
 
 if [ "$NGX_PLATFORM" != win32 ]; then
-    . auto/unix
+    . "$AUTO_DIR/unix"
 fi
 
-. auto/threads
-. auto/modules
-. auto/lib/conf
+. "$AUTO_DIR/threads"
+. "$AUTO_DIR/modules"
+. "$AUTO_DIR/lib/conf"
 
 case ".$NGX_PREFIX" in
     .)
         NGX_PREFIX=${NGX_PREFIX:-/usr/local/nginx}
-        have=NGX_PREFIX value="\"$NGX_PREFIX/\"" . auto/define
+        have=NGX_PREFIX value="\"$NGX_PREFIX/\"" . "$AUTO_DIR/define"
     ;;
 
     .!)
@@ -74,48 +78,48 @@ case ".$NGX_PREFIX" in
     ;;
 
     *)
-        have=NGX_PREFIX value="\"$NGX_PREFIX/\"" . auto/define
+        have=NGX_PREFIX value="\"$NGX_PREFIX/\"" . "$AUTO_DIR/define"
     ;;
 esac
 
 if [ ".$NGX_CONF_PREFIX" != "." ]; then
-    have=NGX_CONF_PREFIX value="\"$NGX_CONF_PREFIX/\"" . auto/define
+    have=NGX_CONF_PREFIX value="\"$NGX_CONF_PREFIX/\"" . "$AUTO_DIR/define"
 fi
 
-have=NGX_SBIN_PATH value="\"$NGX_SBIN_PATH\"" . auto/define
-have=NGX_CONF_PATH value="\"$NGX_CONF_PATH\"" . auto/define
-have=NGX_PID_PATH value="\"$NGX_PID_PATH\"" . auto/define
-have=NGX_LOCK_PATH value="\"$NGX_LOCK_PATH\"" . auto/define
-have=NGX_ERROR_LOG_PATH value="\"$NGX_ERROR_LOG_PATH\"" . auto/define
+have=NGX_SBIN_PATH value="\"$NGX_SBIN_PATH\"" . "$AUTO_DIR/define"
+have=NGX_CONF_PATH value="\"$NGX_CONF_PATH\"" . "$AUTO_DIR/define"
+have=NGX_PID_PATH value="\"$NGX_PID_PATH\"" . "$AUTO_DIR/define"
+have=NGX_LOCK_PATH value="\"$NGX_LOCK_PATH\"" . "$AUTO_DIR/define"
+have=NGX_ERROR_LOG_PATH value="\"$NGX_ERROR_LOG_PATH\"" . "$AUTO_DIR/define"
 
 if [ ".$NGX_ERROR_LOG_PATH" = "." ]; then
-    have=NGX_ERROR_LOG_STDERR . auto/have
+    have=NGX_ERROR_LOG_STDERR . "$AUTO_DIR/have"
 fi
 
-have=NGX_HTTP_LOG_PATH value="\"$NGX_HTTP_LOG_PATH\"" . auto/define
+have=NGX_HTTP_LOG_PATH value="\"$NGX_HTTP_LOG_PATH\"" . "$AUTO_DIR/define"
 have=NGX_HTTP_CLIENT_TEMP_PATH value="\"$NGX_HTTP_CLIENT_TEMP_PATH\""
-. auto/define
+. "$AUTO_DIR/define"
 have=NGX_HTTP_PROXY_TEMP_PATH value="\"$NGX_HTTP_PROXY_TEMP_PATH\""
-. auto/define
+. "$AUTO_DIR/define"
 have=NGX_HTTP_FASTCGI_TEMP_PATH value="\"$NGX_HTTP_FASTCGI_TEMP_PATH\""
-. auto/define
+. "$AUTO_DIR/define"
 have=NGX_HTTP_UWSGI_TEMP_PATH value="\"$NGX_HTTP_UWSGI_TEMP_PATH\""
-. auto/define
+. "$AUTO_DIR/define"
 have=NGX_HTTP_SCGI_TEMP_PATH value="\"$NGX_HTTP_SCGI_TEMP_PATH\""
-. auto/define
+. "$AUTO_DIR/define"
 
-. auto/make
-. auto/lib/make
-. auto/install
+. "$AUTO_DIR/make"
+. "$AUTO_DIR/lib/make"
+. "$AUTO_DIR/install"
 
 # STUB
-. auto/stubs
+. "$AUTO_DIR/stubs"
 
-have=NGX_USER value="\"$NGX_USER\"" . auto/define
-have=NGX_GROUP value="\"$NGX_GROUP\"" . auto/define
+have=NGX_USER value="\"$NGX_USER\"" . "$AUTO_DIR/define"
+have=NGX_GROUP value="\"$NGX_GROUP\"" . "$AUTO_DIR/define"
 
 if [ ".$NGX_BUILD" != "." ]; then
-    have=NGX_BUILD value="\"$NGX_BUILD\"" . auto/define
+    have=NGX_BUILD value="\"$NGX_BUILD\"" . "$AUTO_DIR/define"
 fi
 
-. auto/summary
+. "$AUTO_DIR/summary"
