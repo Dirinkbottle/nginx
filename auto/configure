@@ -5,15 +5,15 @@
 
 # 修复：添加脚本路径检测
 SCRIPT_DIR=$(dirname "$0")
-AUTO_DIR="$SCRIPT_DIR/auto"
+AUTO_DIR="$SCRIPT_DIR"
 
 LC_ALL=C
 export LC_ALL
 
 # 修复：使用正确的路径加载文件
-. "options"
-. "init"
-. "sources"
+. "$AUTO_DIR/options"
+. "$AUTO_DIR/init"
+. "$AUTO_DIR/sources"
 
 test -d $NGX_OBJS || mkdir -p $NGX_OBJS
 
