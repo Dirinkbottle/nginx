@@ -130,11 +130,6 @@ jobs:
         cd build-${{ env.ARCH }}
         make -j $(nproc)
 
-    # ... 其余步骤保持不变 ...
-    - name: Build Nginx
-      run: |
-        cd build-${{ env.ARCH }}
-        make -j $(nproc) # 使用所有可用核心编译
 
     - name: Prepare artifacts
       run: |
