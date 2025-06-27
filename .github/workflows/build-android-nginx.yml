@@ -20,7 +20,17 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential automake libtool unzip
         
-    - name: Download Android NDK r27c
+    - name: Cache Android NDK
+      id: cache-ndk
+      uses: actions/cache@v3
+      with:
+        path: |
+          android-ndk-r27c
+          android-ndk-r27c-linux.zip
+        key: ndk-r27c-cache
+        
+    - name: Download Android NDK r27c (if not cached)
+      if: steps.cache-ndk.outputs.cache-hit != 'true'
       run: |
         # 使用指定镜像下载固定版本的 NDK
         NDK_VERSION="r27c"
@@ -31,13 +41,24 @@ jobs:
         wget $NDK_URL
         
         echo "📦 解压 NDK..."
-        unzip -q $NDK_ZIP -d /usr/local/lib
+        unzip -q $NDK_ZIP -d .
         rm $NDK_ZIP
         
+        # 重命名解压后的目录以匹配缓存路径
+        mv android-ndk-${NDK_VERSION} android-ndk-r27c
+
+    - name: Set NDK environment
+      run: |
         # 设置环境变量
-        echo "NDK_ROOT=/usr/local/lib/android-ndk-${NDK_VERSION}" >> $GITHUB_ENV
-        echo "NDK_VERSION=${NDK_VERSION}" >> $GITHUB_ENV
+        echo "NDK_ROOT=$GITHUB_WORKSPACE/android-ndk-r27c" >> $GITHUB_ENV
+        echo "NDK_VERSION=r27c" >> $GITHUB_ENV
         echo "NDK下载完成: $NDK_ROOT"
+        
+        # 验证 NDK 存在
+        if [ ! -d "$NDK_ROOT" ]; then
+          echo "❌ NDK not found at $NDK_ROOT" >&2
+          exit 1
+        fi
 
     - name: Configure build parameters
       id: config
@@ -149,7 +170,7 @@ jobs:
         tar czf android-nginx-arm64.tar.gz android-nginx-arm64
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4 # 使用 v4 版本
       with:
         name: android-nginx-arm64
         path: |
