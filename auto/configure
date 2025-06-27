@@ -3,7 +3,7 @@
 # Copyright (C) Igor Sysoev
 # Copyright (C) Nginx, Inc.
 
-# 修复：使用脚本所在目录的路径
+# 修复：添加脚本路径检测
 SCRIPT_DIR=$(dirname "$0")
 AUTO_DIR="$SCRIPT_DIR/auto"
 
