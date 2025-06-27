@@ -24,12 +24,10 @@ jobs:
       id: cache-ndk
       uses: actions/cache@v3
       with:
-        path: |
-          android-ndk-r27c
-          android-ndk-r27c-linux.zip
+        path: android-ndk-r27c
         key: ndk-r27c-cache
         
-    - name: Download Android NDK r27c (if not cached)
+    - name: Download and extract Android NDK r27c
       if: steps.cache-ndk.outputs.cache-hit != 'true'
       run: |
         # 使用指定镜像下载固定版本的 NDK
@@ -41,22 +39,31 @@ jobs:
         wget $NDK_URL
         
         echo "📦 解压 NDK..."
+        # 直接解压到当前目录，避免重命名问题
         unzip -q $NDK_ZIP -d .
         rm $NDK_ZIP
         
-        # 重命名解压后的目录以匹配缓存路径
-        mv android-ndk-${NDK_VERSION} android-ndk-r27c
+        # 验证解压结果
+        if [ ! -d "android-ndk-${NDK_VERSION}" ]; then
+          echo "❌ NDK 解压失败！"
+          exit 1
+        fi
 
     - name: Set NDK environment
       run: |
         # 设置环境变量
         echo "NDK_ROOT=$GITHUB_WORKSPACE/android-ndk-r27c" >> $GITHUB_ENV
         echo "NDK_VERSION=r27c" >> $GITHUB_ENV
-        echo "NDK下载完成: $NDK_ROOT"
         
-        # 验证 NDK 存在
-        if [ ! -d "$NDK_ROOT" ]; then
-          echo "❌ NDK not found at $NDK_ROOT" >&2
+        # 如果缓存命中，目录名是 android-ndk-r27c
+        # 如果下载解压，目录名是 android-ndk-r27c
+        # 确保目录名称一致
+        if [ -d "android-ndk-r27c" ]; then
+          echo "✅ 使用缓存的 NDK: $GITHUB_WORKSPACE/android-ndk-r27c"
+        elif [ -d "android-ndk-r27c" ]; then
+          echo "✅ 使用新下载的 NDK: $GITHUB_WORKSPACE/android-ndk-r27c"
+        else
+          echo "❌ NDK 目录未找到！"
           exit 1
         fi
 
