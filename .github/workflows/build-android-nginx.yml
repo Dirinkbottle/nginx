@@ -1,22 +1,22 @@
 name: Build Android ARM64 Nginx
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # 允许手动触发
   push:
     branches: [ main ]
-    paths: [ 'src/**', 'auto/**', 'conf/**' ]
+    paths: [ 'src/**', 'auto/**', 'conf/**' ] # 当核心代码变更时触发
 
 jobs:
   build-android-nginx:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 30 # 设置超时时间
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        submodules: recursive
-        fetch-depth: 0
+        submodules: recursive # 确保检出所有子模块
+        fetch-depth: 0 # 获取完整历史记录
 
     - name: Set up environment
       run: |
@@ -33,6 +33,7 @@ jobs:
     - name: Download and extract Android NDK r27c
       if: steps.cache-ndk.outputs.cache-hit != 'true'
       run: |
+        # 使用指定镜像下载固定版本的 NDK
         NDK_VERSION="r27c"
         NDK_ZIP="android-ndk-${NDK_VERSION}-linux.zip"
         NDK_URL="https://googledownloads.cn/android/repository/${NDK_ZIP}"
@@ -44,6 +45,7 @@ jobs:
         unzip -q $NDK_ZIP
         rm $NDK_ZIP
         
+        # 验证解压结果
         if [ ! -d "android-ndk-${NDK_VERSION}" ]; then
           echo "❌ NDK 解压失败！"
           exit 1
@@ -51,14 +53,17 @@ jobs:
 
     - name: Set NDK environment
       run: |
+        # 设置环境变量
         echo "NDK_ROOT=$GITHUB_WORKSPACE/android-ndk-r27c" >> $GITHUB_ENV
         echo "NDK_VERSION=r27c" >> $GITHUB_ENV
         
+        # 确保目录名称一致
         if [ -d "android-ndk-r27c" ]; then
-          echo "✅ 使用缓存的 NDK"
+          echo "✅ 使用缓存的 NDK: $GITHUB_WORKSPACE/android-ndk-r27c"
         elif [ -d "android-ndk-${NDK_VERSION}" ]; then
+          # 重命名目录以匹配缓存路径
           mv "android-ndk-${NDK_VERSION}" "android-ndk-r27c"
-          echo "✅ 使用新下载的 NDK"
+          echo "✅ 使用新下载的 NDK: $GITHUB_WORKSPACE/android-ndk-r27c"
         else
           echo "❌ NDK 目录未找到！"
           exit 1
@@ -66,11 +71,13 @@ jobs:
 
     - name: Configure build parameters
       run: |
+        # 设置架构参数
         echo "ARCH=arm64" >> $GITHUB_ENV
         echo "TRIPLE=aarch64-linux-android" >> $GITHUB_ENV
         echo "API_LEVEL=21" >> $GITHUB_ENV
         echo "CPU=armv8-a" >> $GITHUB_ENV
         
+        # 设置工具链路径
         TOOLCHAIN="$NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin"
         echo "TOOLCHAIN=$TOOLCHAIN" >> $GITHUB_ENV
         echo "CC=$TOOLCHAIN/${TRIPLE}${API_LEVEL}-clang" >> $GITHUB_ENV
@@ -78,39 +85,31 @@ jobs:
         echo "AR=$TOOLCHAIN/llvm-ar" >> $GITHUB_ENV
         echo "RANLIB=$TOOLCHAIN/llvm-ranlib" >> $GITHUB_ENV
         
+        # 设置编译标志
         echo "CFLAGS=-target ${TRIPLE} -march=$CPU -Os -fPIE -fPIC" >> $GITHUB_ENV
         echo "LDFLAGS=-target ${TRIPLE} -pie" >> $GITHUB_ENV
 
     - name: Verify repository structure
       run: |
+        # 检查必要的文件和目录是否存在
         echo "🔍 验证仓库结构..."
-        # 检查关键文件是否存在
-        if [ ! -f "auto/configure" ]; then
-          echo "❌ auto/configure 文件不存在！"
-          exit 1
-        fi
-        
-        if [ ! -f "auto/options" ]; then
-          echo "❌ auto/options 文件不存在！"
-          exit 1
-        fi
-        
-        if [ ! -f "src/core/nginx.c" ]; then
-          echo "❌ src/core/nginx.c 文件不存在！"
-          exit 1
-        fi
-        
+        required_files=("auto/configure" "auto/options" "src/core/nginx.c")
+        for file in "${required_files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "❌ 文件不存在: $file"
+            exit 1
+          fi
+        done
         echo "✅ 仓库结构验证通过"
 
-    # 关键修复：在仓库根目录运行配置
     - name: Configure Nginx
       run: |
         # 创建构建目录
         mkdir build-${{ env.ARCH }}
+        cd build-${{ env.ARCH }}
         
-        # 在仓库根目录运行配置
-        ./auto/configure \
-          --builddir=build-${{ env.ARCH }} \
+        # 使用绝对路径运行配置
+        $GITHUB_WORKSPACE/auto/configure \
           --prefix=/ \
           --sbin-path=nginx \
           --conf-path=conf/nginx.conf \
@@ -127,12 +126,12 @@ jobs:
           --without-mail
         
         # 保存配置日志
-        cp build-${{ env.ARCH }}/objs/autoconf.err config.log
+        cp objs/autoconf.err ../config.log
 
     - name: Build Nginx
       run: |
         cd build-${{ env.ARCH }}
-        make -j $(nproc)
+        make -j $(nproc) # 使用所有可用核心编译
 
     - name: Prepare artifacts
       run: |
@@ -200,7 +199,7 @@ jobs:
           config.log
 
     - name: Create release
-      if: github.ref == 'refs/heads/main'
+      if: github.ref == 'refs/heads/main' # 仅在 main 分支创建发布
       uses: softprops/action-gh-release@v1
       with:
         files: android-nginx-arm64.tar.gz
