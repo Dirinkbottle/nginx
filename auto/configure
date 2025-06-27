@@ -11,9 +11,9 @@ LC_ALL=C
 export LC_ALL
 
 # 修复：使用正确的路径加载文件
-. "$AUTO_DIR/options"
-. "$AUTO_DIR/init"
-. "$AUTO_DIR/sources"
+. "/home/runner/work/nginx/nginx/auto/options"
+. "/home/runner/work/nginx/nginx/auto/init"
+. "/home/runner/work/nginx/nginx/auto/sources"
 
 test -d $NGX_OBJS || mkdir -p $NGX_OBJS
 
