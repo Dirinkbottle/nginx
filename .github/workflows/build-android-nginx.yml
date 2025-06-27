@@ -103,10 +103,11 @@ jobs:
 
     - name: Configure Nginx
       run: |
+        # 创建构建目录
         mkdir build-${{ env.ARCH }}
         cd build-${{ env.ARCH }}
         
-        # 关键修复：使用绝对路径
+        # 使用修复后的配置脚本
         $GITHUB_WORKSPACE/auto/configure \
           --prefix=/ \
           --sbin-path=nginx \
@@ -123,6 +124,7 @@ jobs:
           --without-http_rewrite_module \
           --without-mail
         
+        # 保存配置日志
         cp objs/autoconf.err ../config.log
 
     - name: Build Nginx
