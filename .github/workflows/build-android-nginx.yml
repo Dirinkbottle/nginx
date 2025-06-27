@@ -18,12 +18,18 @@ jobs:
     - name: Set up environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential automake libtool
+        sudo apt-get install -y build-essential automake libtool unzip
         
-    - name: Set up Android NDK
-      uses: android-actions/setup-ndk@v1
-      with:
-        ndk-version: "25.2.9519653" # 指定NDK版本
+    - name: Download Android NDK
+      run: |
+        # 下载指定版本的 NDK
+        NDK_VERSION="25.2.9519653"
+        NDK_ZIP="android-ndk-r${NDK_VERSION}-linux.zip"
+        wget https://dl.google.com/android/repository/${NDK_ZIP}
+        unzip -q ${NDK_ZIP} -d /usr/local/lib
+        echo "NDK_ROOT=/usr/local/lib/android-ndk-r${NDK_VERSION}" >> $GITHUB_ENV
+        echo "NDK_VERSION=${NDK_VERSION}" >> $GITHUB_ENV
+        rm ${NDK_ZIP}
 
     - name: Configure build parameters
       id: config
@@ -33,10 +39,6 @@ jobs:
         echo "TRIPLE=aarch64-linux-android" >> $GITHUB_ENV
         echo "API_LEVEL=21" >> $GITHUB_ENV
         echo "CPU=armv8-a" >> $GITHUB_ENV
-        
-        # 计算NDK路径
-        NDK_ROOT="$ANDROID_NDK_ROOT"
-        echo "NDK_ROOT=$NDK_ROOT" >> $GITHUB_ENV
         
         # 设置工具链路径
         TOOLCHAIN="$NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin"
@@ -138,7 +140,7 @@ jobs:
         tar czf android-nginx-arm64.tar.gz android-nginx-arm64
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: android-nginx-arm64
         path: |
